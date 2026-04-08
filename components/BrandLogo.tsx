@@ -29,7 +29,7 @@ function LogoMark() {
 function BrandText({ compact, subtitle }: { compact: boolean; subtitle?: string }) {
   return (
     <div className="min-w-0">
-      <p className="truncate text-base font-black tracking-tight text-slate-900 dark:text-slate-100">Liberdadade Financeira</p>
+      <p className="truncate text-base font-black tracking-tight text-slate-900 dark:text-slate-100">Liberdade Financeira</p>
       {!compact && (
         <p className="truncate text-xs font-semibold uppercase tracking-[0.16em] text-cyan-700/90 dark:text-cyan-400/90">
           {subtitle || 'Gestão Inteligente'}

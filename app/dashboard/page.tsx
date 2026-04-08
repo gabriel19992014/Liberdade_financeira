@@ -183,7 +183,7 @@ export default function DashboardPage() {
 
         doc.setFontSize(11)
         doc.setTextColor(14, 116, 144)
-        doc.text('Liberdadade Financeira', 31, 15)
+        doc.text('Liberdade Financeira', 31, 15)
         doc.setFontSize(9)
         doc.setTextColor(100, 116, 139)
         doc.text('Relatório gerencial', 31, 20)
@@ -368,53 +368,72 @@ export default function DashboardPage() {
       let offset = 0
 
       return (
-        <div className="flex flex-col lg:flex-row gap-6 items-center justify-center">
-          <div className="flex items-center justify-center bg-white shadow rounded-xl p-6 w-full max-w-[360px]">
-            <svg viewBox="0 0 220 220" className="w-full h-full max-w-[240px] max-h-[240px]">
-              <circle cx="110" cy="110" r={radius} fill="#f3f4f6" />
-              {chartItems.map((item) => {
-                const dash = hasValues ? (item.value / totalValue) * circumference : 0
-                const strokeDasharray = `${dash} ${circumference}`
-                const circle = (
-                  <circle
-                    key={item.key}
-                    cx="110"
-                    cy="110"
-                    r={radius}
-                    fill="transparent"
-                    stroke={item.color}
-                    strokeWidth="30"
-                    strokeDasharray={strokeDasharray}
-                    strokeDashoffset={offset}
-                    strokeLinecap="round"
-                    transform="rotate(-90 110 110)"
-                  />
-                )
-                offset -= dash
-                return circle
-              })}
-              <circle cx="110" cy="110" r={radius - 22} fill="#ffffff" />
-              <text x="110" y="110" textAnchor="middle" dominantBaseline="middle" className="text-sm font-semibold fill-slate-700">
-                {hasValues ? (chartView === 'classification' ? 'Classificação' : 'Gênero') : 'Sem dados'}
-              </text>
-            </svg>
+        <div className="mx-auto grid w-full max-w-5xl items-center gap-6 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
+          <div className="panel-card mx-auto w-full max-w-[420px] p-6 sm:p-8">
+            <div className="relative mx-auto aspect-square w-full max-w-[300px]">
+              <svg viewBox="0 0 220 220" className="h-full w-full -rotate-90">
+                <circle cx="110" cy="110" r={radius} fill="none" stroke="#e2e8f0" strokeWidth="30" />
+                {chartItems.map((item) => {
+                  const dash = hasValues ? (item.value / totalValue) * circumference : 0
+                  const strokeDasharray = `${dash} ${circumference}`
+                  const circle = (
+                    <circle
+                      key={item.key}
+                      cx="110"
+                      cy="110"
+                      r={radius}
+                      fill="transparent"
+                      stroke={item.color}
+                      strokeWidth="30"
+                      strokeDasharray={strokeDasharray}
+                      strokeDashoffset={offset}
+                      strokeLinecap="round"
+                    />
+                  )
+                  offset -= dash
+                  return circle
+                })}
+              </svg>
+
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  {chartView === 'classification' ? 'Classificação' : 'Gênero'}
+                </p>
+                <p className="mt-2 text-2xl font-black text-slate-900">
+                  {hasValues ? formatCurrencyBRL(totalValue) : 'Sem dados'}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {chartItems.length} {chartItems.length === 1 ? 'item' : 'itens'}
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 w-full max-w-[360px]">
+          <div className="grid grid-cols-1 gap-3">
             {chartItems.map((item) => {
               const percent = hasValues ? ((item.value / totalValue) * 100).toFixed(1) : '0.0'
+              const widthPercent = hasValues && item.value > 0 ? Math.max((item.value / totalValue) * 100, 3) : 0
+
               return (
-                <div key={item.key} className="p-4 rounded-lg bg-white shadow-sm flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                    <div className="text-sm text-slate-700">
-                      <p className="font-semibold">{item.label}</p>
-                      <p className="text-xs text-slate-500">{hasValues ? `${percent}% do total` : '0%'}</p>
+                <div key={item.key} className="panel-card p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="h-3 w-3 flex-none rounded-full ring-2 ring-white/80" style={{ backgroundColor: item.color }} />
+                      <p className="truncate text-sm font-semibold text-slate-800">{item.label}</p>
                     </div>
+                    <p className="text-xs font-semibold text-slate-500">{percent}%</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-slate-700">{hasValues ? formatCurrencyBRL(item.value) : '0'}</p>
+
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200/80">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${widthPercent}%`, backgroundColor: item.color }}
+                    />
                   </div>
+
+                  <p className="mt-3 text-sm font-semibold text-slate-700">
+                    {hasValues ? formatCurrencyBRL(item.value) : formatCurrencyBRL(0)}
+                  </p>
                 </div>
               )
             })}

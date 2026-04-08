@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomUUID } from 'crypto'
 import { requireAuth } from '@/lib/middleware'
 import { getTransactionsByUserId, saveTransactionsByUserId } from '@/lib/auth'
 import { reservedCategories } from '@/lib/constants/finance'
 import { toNumberAmount } from '@/lib/utils/finance'
-import type { Transaction } from '@/lib/types/finance'
 import { parseTransactionPayload } from '@/lib/schemas/finance'
 import { ZodError } from 'zod'
 
@@ -39,7 +39,7 @@ export const POST = requireAuth(async (request: NextRequest, userId: string) => 
 
     const transactions = await getTransactionsByUserId(userId)
     const newTransaction = {
-      id: Date.now().toString(),
+      id: randomUUID(),
       type,
       classification,
       category,

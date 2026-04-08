@@ -64,6 +64,10 @@ interface DbTransaction {
   date: string
 }
 
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+}
+
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase()
 }
@@ -214,6 +218,10 @@ export async function getUserById(id: string): Promise<User | null> {
   const supabase = getSupabaseServerClient()
 
   if (supabase) {
+    if (!isUuid(id)) {
+      return null
+    }
+
     const { data, error } = await supabase
       .from('users')
       .select('id, email, password_hash, name, security_question, security_answer_hash')
@@ -263,6 +271,10 @@ export async function updateUserPassword(userId: string, passwordHash: string): 
   const supabase = getSupabaseServerClient()
 
   if (supabase) {
+    if (!isUuid(userId)) {
+      return false
+    }
+
     const { data, error } = await supabase
       .from('users')
       .update({ password_hash: passwordHash })
@@ -297,6 +309,10 @@ export async function getTransactionsByUserId(userId: string): Promise<Transacti
   const supabase = getSupabaseServerClient()
 
   if (supabase) {
+    if (!isUuid(userId)) {
+      return []
+    }
+
     const { data, error } = await supabase
       .from('transactions')
       .select('id, user_id, type, classification, category, amount, description, date')
@@ -317,6 +333,10 @@ export async function saveTransactionsByUserId(userId: string, transactions: Tra
   const supabase = getSupabaseServerClient()
 
   if (supabase) {
+    if (!isUuid(userId)) {
+      return
+    }
+
     const { error: deleteError } = await supabase
       .from('transactions')
       .delete()
@@ -342,4 +362,45 @@ export async function saveTransactionsByUserId(userId: string, transactions: Tra
   }
 
   writeData<Transaction>(`transactions-${userId}.json`, transactions)
+}
+
+export async function deleteUserAccount(userId: string): Promise<boolean> {
+  const supabase = getSupabaseServerClient()
+
+  if (supabase) {
+    if (!isUuid(userId)) {
+      return false
+    }
+
+    const { count, error } = await supabase
+      .from('users')
+      .delete({ count: 'exact' })
+      .eq('id', userId)
+
+    if (error) {
+      throw new Error(`Falha ao excluir usuario: ${error.message}`)
+    }
+
+    return (count || 0) > 0
+  }
+
+  const users = readData<User>('users.json')
+  const filteredUsers = users.filter((user) => user.id !== userId)
+
+  if (filteredUsers.length === users.length) {
+    return false
+  }
+
+  writeData('users.json', filteredUsers)
+
+  try {
+    const filePath = path.join(DATA_DIR, `transactions-${userId}.json`)
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath)
+    }
+  } catch (error) {
+    console.error('Error removing user transactions file:', error)
+  }
+
+  return true
 }

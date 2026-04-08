@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from './auth'
+import { getUserById, verifyToken } from './auth'
 
 export function requireAuth(handler: (request: NextRequest, userId: string, context?: any) => Promise<NextResponse>) {
   return async (request: NextRequest, context?: any) => {
@@ -14,6 +14,11 @@ export function requireAuth(handler: (request: NextRequest, userId: string, cont
 
       if (!decoded) {
         return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
+      }
+
+      const user = await getUserById(decoded.userId)
+      if (!user) {
+        return NextResponse.json({ error: 'Sessão inválida. Faça login novamente.' }, { status: 401 })
       }
 
       return handler(request, decoded.userId, context)
