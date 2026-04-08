@@ -9,10 +9,10 @@ beforeAll(() => {
 describe('transactions API validation', () => {
   it('retorna 400 para valor invalido no payload', async () => {
     const email = `tx-${Date.now()}@example.com`
-    let user = getUserByEmail(email)
+    let user = await getUserByEmail(email)
 
     if (!user) {
-      user = createUser({
+      user = await createUser({
         name: 'Usuario Transacao Teste',
         email,
         password: hashPassword('12345678'),

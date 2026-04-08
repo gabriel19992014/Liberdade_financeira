@@ -18,7 +18,7 @@ export const GET = requireAuth(async (request: NextRequest, userId: string) => {
     const year = searchParams.get('year')
     const month = searchParams.get('month')
 
-    const transactions = getTransactionsByUserId(userId) as Transaction[]
+    const transactions = (await getTransactionsByUserId(userId)) as Transaction[]
     const { startDate, endDate } = resolveDateRange(period, year, month)
 
     const periodTransactions = transactions.filter((t) => {

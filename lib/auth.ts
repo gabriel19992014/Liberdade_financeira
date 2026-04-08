@@ -3,6 +3,7 @@ import path from 'path'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import type { Transaction } from '@/lib/types/finance'
+import { getSupabaseServerClient } from '@/lib/supabase-server'
 
 const DATA_DIR = initializeDataDir()
 
@@ -41,6 +42,26 @@ export interface User {
   name: string
   securityQuestion: string
   securityAnswerHash: string
+}
+
+interface DbUser {
+  id: string
+  email: string
+  password_hash: string
+  name: string
+  security_question: string
+  security_answer_hash: string
+}
+
+interface DbTransaction {
+  id: string
+  user_id: string
+  type: string
+  classification: string | null
+  category: string
+  amount: number
+  description: string | null
+  date: string
 }
 
 export function normalizeEmail(email: string): string {
@@ -121,18 +142,112 @@ export function verifyToken(token: string): { userId: string } | null {
   }
 }
 
-export function getUserByEmail(email: string): User | null {
+function mapDbUserToUser(user: DbUser): User {
+  return {
+    id: user.id,
+    email: user.email,
+    password: user.password_hash,
+    name: user.name,
+    securityQuestion: user.security_question,
+    securityAnswerHash: user.security_answer_hash
+  }
+}
+
+function mapUserToDbPayload(user: Omit<User, 'id'>) {
+  return {
+    email: normalizeEmail(user.email),
+    password_hash: user.password,
+    name: user.name,
+    security_question: user.securityQuestion,
+    security_answer_hash: user.securityAnswerHash
+  }
+}
+
+function mapDbTransactionToTransaction(transaction: DbTransaction): Transaction {
+  return {
+    id: transaction.id,
+    type: transaction.type as Transaction['type'],
+    classification: transaction.classification || 'outros',
+    category: transaction.category,
+    amount: transaction.amount,
+    description: transaction.description || '',
+    date: transaction.date
+  }
+}
+
+function mapTransactionToDbPayload(userId: string, transaction: Transaction) {
+  return {
+    id: transaction.id,
+    user_id: userId,
+    type: transaction.type,
+    classification: transaction.classification || null,
+    category: transaction.category,
+    amount: Number(transaction.amount),
+    description: transaction.description || null,
+    date: transaction.date
+  }
+}
+
+export async function getUserByEmail(email: string): Promise<User | null> {
+  const supabase = getSupabaseServerClient()
   const normalizedEmail = normalizeEmail(email)
+
+  if (supabase) {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, email, password_hash, name, security_question, security_answer_hash')
+      .eq('email', normalizedEmail)
+      .maybeSingle<DbUser>()
+
+    if (error) {
+      throw new Error(`Falha ao buscar usuario por email: ${error.message}`)
+    }
+
+    return data ? mapDbUserToUser(data) : null
+  }
+
   const users = readData<User>('users.json')
   return users.find((user) => normalizeEmail(user.email) === normalizedEmail) || null
 }
 
-export function getUserById(id: string): User | null {
+export async function getUserById(id: string): Promise<User | null> {
+  const supabase = getSupabaseServerClient()
+
+  if (supabase) {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, email, password_hash, name, security_question, security_answer_hash')
+      .eq('id', id)
+      .maybeSingle<DbUser>()
+
+    if (error) {
+      throw new Error(`Falha ao buscar usuario por id: ${error.message}`)
+    }
+
+    return data ? mapDbUserToUser(data) : null
+  }
+
   const users = readData<User>('users.json')
   return users.find((user) => user.id === id) || null
 }
 
-export function createUser(user: Omit<User, 'id'>): User {
+export async function createUser(user: Omit<User, 'id'>): Promise<User> {
+  const supabase = getSupabaseServerClient()
+
+  if (supabase) {
+    const { data, error } = await supabase
+      .from('users')
+      .insert(mapUserToDbPayload(user))
+      .select('id, email, password_hash, name, security_question, security_answer_hash')
+      .single<DbUser>()
+
+    if (error) {
+      throw new Error(`Falha ao criar usuario: ${error.message}`)
+    }
+
+    return mapDbUserToUser(data)
+  }
+
   const users = readData<User>('users.json')
   const newUser = {
     ...user,
@@ -144,7 +259,24 @@ export function createUser(user: Omit<User, 'id'>): User {
   return newUser
 }
 
-export function updateUserPassword(userId: string, passwordHash: string): boolean {
+export async function updateUserPassword(userId: string, passwordHash: string): Promise<boolean> {
+  const supabase = getSupabaseServerClient()
+
+  if (supabase) {
+    const { data, error } = await supabase
+      .from('users')
+      .update({ password_hash: passwordHash })
+      .eq('id', userId)
+      .select('id')
+      .maybeSingle<{ id: string }>()
+
+    if (error) {
+      throw new Error(`Falha ao atualizar senha: ${error.message}`)
+    }
+
+    return Boolean(data)
+  }
+
   const users = readData<User>('users.json')
   const userIndex = users.findIndex((user) => user.id === userId)
 
@@ -161,10 +293,53 @@ export function updateUserPassword(userId: string, passwordHash: string): boolea
   return true
 }
 
-export function getTransactionsByUserId(userId: string): Transaction[] {
+export async function getTransactionsByUserId(userId: string): Promise<Transaction[]> {
+  const supabase = getSupabaseServerClient()
+
+  if (supabase) {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('id, user_id, type, classification, category, amount, description, date')
+      .eq('user_id', userId)
+      .returns<DbTransaction[]>()
+
+    if (error) {
+      throw new Error(`Falha ao buscar transacoes: ${error.message}`)
+    }
+
+    return (data || []).map(mapDbTransactionToTransaction)
+  }
+
   return readData<Transaction>(`transactions-${userId}.json`)
 }
 
-export function saveTransactionsByUserId(userId: string, transactions: Transaction[]): void {
+export async function saveTransactionsByUserId(userId: string, transactions: Transaction[]): Promise<void> {
+  const supabase = getSupabaseServerClient()
+
+  if (supabase) {
+    const { error: deleteError } = await supabase
+      .from('transactions')
+      .delete()
+      .eq('user_id', userId)
+
+    if (deleteError) {
+      throw new Error(`Falha ao limpar transacoes: ${deleteError.message}`)
+    }
+
+    if (transactions.length > 0) {
+      const payload = transactions.map((transaction) => mapTransactionToDbPayload(userId, transaction))
+
+      const { error: insertError } = await supabase
+        .from('transactions')
+        .insert(payload)
+
+      if (insertError) {
+        throw new Error(`Falha ao salvar transacoes: ${insertError.message}`)
+      }
+    }
+
+    return
+  }
+
   writeData<Transaction>(`transactions-${userId}.json`, transactions)
 }

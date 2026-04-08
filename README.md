@@ -11,7 +11,7 @@ link do projeto https://liberdade-financeira-henna.vercel.app/
 - TypeScript
 - Tailwind CSS
 - JWT + bcryptjs
-- Persistência local em JSON (por usuário)
+- Supabase (PostgreSQL) com fallback local em JSON para desenvolvimento sem variáveis
 
 ## Arquitetura Atual
 
@@ -80,7 +80,9 @@ npm install
 2. Criar ou ajustar arquivo de ambiente
 
 ```bash
-# defina JWT_SECRET em .env.local
+JWT_SECRET=sua-chave-secreta
+SUPABASE_URL=https://seu-projeto.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=sua-service-role-key
 ```
 
 3. Subir aplicação
@@ -89,10 +91,18 @@ npm install
 npm run dev
 ```
 
+## Setup do banco (Supabase)
+
+1. Crie um projeto no Supabase.
+2. Abra SQL Editor.
+3. Execute o arquivo supabase/schema.sql.
+4. Copie SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY para a Vercel e para .env.local.
+
 ## Notas de evolução
 
 - O projeto foi refatorado para centralizar regras de negócio em módulos compartilhados.
 - Regras de formatação, categorias e classificação não ficam mais espalhadas entre páginas e APIs.
 - O fluxo de recuperação de senha usa pergunta de segurança cadastrada pelo próprio usuário.
 - Sem a resposta correta da pergunta de segurança não é possível recuperar a senha.
-- Próximo passo recomendado: migrar persistência JSON para banco relacional mantendo os contratos em lib/types.
+- O projeto agora usa Supabase quando variáveis de ambiente estão configuradas.
+- Sem SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY, o projeto entra em fallback local para facilitar testes.

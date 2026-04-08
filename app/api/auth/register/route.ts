@@ -24,14 +24,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { name, email, password, securityQuestion, securityAnswer } = registerPayloadSchema.parse(body)
 
-    const existingUser = getUserByEmail(email)
+    const existingUser = await getUserByEmail(email)
     if (existingUser) {
       return NextResponse.json({ error: 'Email já cadastrado' }, { status: 409 })
     }
 
     const hashedPassword = hashPassword(password)
     const hashedSecurityAnswer = hashPassword(normalizeSecurityAnswer(securityAnswer))
-    const user = createUser({
+    const user = await createUser({
       name,
       email,
       password: hashedPassword,

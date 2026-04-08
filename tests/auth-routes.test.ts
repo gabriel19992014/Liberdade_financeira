@@ -114,7 +114,7 @@ describe('auth API routes', () => {
     expect(resetRes.status).toBe(200)
     expect(resetBody.message).toBe('Senha redefinida com sucesso.')
 
-    const updatedUser = getUserByEmail(email)
+    const updatedUser = await getUserByEmail(email)
 
     expect(updatedUser).not.toBeNull()
     expect(verifyPassword(newPassword, updatedUser!.password)).toBe(true)

@@ -10,7 +10,7 @@ import { ZodError } from 'zod'
 // GET /api/transactions - Get all transactions for the authenticated user
 export const GET = requireAuth(async (request: NextRequest, userId: string) => {
   try {
-    const transactions = getTransactionsByUserId(userId)
+    const transactions = await getTransactionsByUserId(userId)
     return NextResponse.json(transactions)
   } catch (error) {
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
@@ -25,7 +25,7 @@ export const POST = requireAuth(async (request: NextRequest, userId: string) => 
     const parsedAmount = amount
 
     if (type === 'savings') {
-      const transactions = getTransactionsByUserId(userId)
+      const transactions = await getTransactionsByUserId(userId)
       const currentSavings = transactions
         .filter((t) => t.type === 'savings')
         .reduce((sum, t) => sum + toNumberAmount(t.amount), 0)
@@ -37,7 +37,7 @@ export const POST = requireAuth(async (request: NextRequest, userId: string) => 
       }
     }
 
-    const transactions = getTransactionsByUserId(userId)
+    const transactions = await getTransactionsByUserId(userId)
     const newTransaction = {
       id: Date.now().toString(),
       type,
@@ -49,7 +49,7 @@ export const POST = requireAuth(async (request: NextRequest, userId: string) => 
     }
 
     transactions.push(newTransaction)
-    saveTransactionsByUserId(userId, transactions)
+    await saveTransactionsByUserId(userId, transactions)
 
     return NextResponse.json(newTransaction, { status: 201 })
   } catch (error) {
@@ -75,7 +75,7 @@ export const DELETE = requireAuth(async (request: NextRequest, userId: string) =
       return NextResponse.json({ error: 'Não é possível excluir categorias padrão' }, { status: 400 })
     }
 
-    const transactions = getTransactionsByUserId(userId)
+    const transactions = await getTransactionsByUserId(userId)
     let updatedCount = 0
 
     const updatedTransactions = transactions.map((transaction) => {
@@ -93,7 +93,7 @@ export const DELETE = requireAuth(async (request: NextRequest, userId: string) =
       return NextResponse.json({ error: 'Gênero não encontrado' }, { status: 404 })
     }
 
-    saveTransactionsByUserId(userId, updatedTransactions)
+    await saveTransactionsByUserId(userId, updatedTransactions)
 
     return NextResponse.json({
       message: 'Gênero removido com sucesso',

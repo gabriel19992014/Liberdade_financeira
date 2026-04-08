@@ -29,9 +29,9 @@ describe('auth utils', () => {
     expect(verifyToken('token-invalido')).toBeNull()
   })
 
-  it('valida resposta de segurança ignorando acentos e caixa', () => {
+  it('valida resposta de segurança ignorando acentos e caixa', async () => {
     const email = `reset-auth-${Date.now()}@example.com`
-    const user = createUser({
+    const user = await createUser({
       name: 'Reset Auth Test',
       email,
       password: hashPassword('12345678'),

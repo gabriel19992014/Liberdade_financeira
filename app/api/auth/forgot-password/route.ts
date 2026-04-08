@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     if (typeof body?.securityAnswer === 'string' && typeof body?.password === 'string') {
       const { email, securityAnswer, password } = forgotPasswordResetPayloadSchema.parse(body)
-      const user = getUserByEmail(email)
+      const user = await getUserByEmail(email)
 
       if (!user || !user.securityQuestion || !user.securityAnswerHash) {
         return NextResponse.json(
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Resposta da pergunta de segurança inválida.' }, { status: 400 })
       }
 
-      const updated = updateUserPassword(user.id, hashPassword(password))
+      const updated = await updateUserPassword(user.id, hashPassword(password))
 
       if (!updated) {
         return NextResponse.json({ error: 'Usuário não encontrado.' }, { status: 404 })
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { email } = forgotPasswordQuestionPayloadSchema.parse(body)
-    const user = getUserByEmail(email)
+    const user = await getUserByEmail(email)
 
     if (!user || !user.securityQuestion || !user.securityAnswerHash) {
       return NextResponse.json(

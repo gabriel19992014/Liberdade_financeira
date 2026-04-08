@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { email, password } = loginPayloadSchema.parse(body)
 
-    const user = getUserByEmail(email)
+    const user = await getUserByEmail(email)
     const isValidPassword = user
       ? verifyPassword(password, user.password)
       : verifyPassword(password, DUMMY_PASSWORD_HASH)

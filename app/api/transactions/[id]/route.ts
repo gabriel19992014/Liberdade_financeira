@@ -17,7 +17,7 @@ export const PUT = requireAuth(async (request: NextRequest, userId: string, cont
     const body = await request.json()
     const { type, classification, category, amount, description, date } = parseTransactionPayload(body)
     const parsedAmount = amount
-    const transactions = getTransactionsByUserId(userId)
+    const transactions = await getTransactionsByUserId(userId)
     const transactionIndex = transactions.findIndex((t) => t.id === params.id)
 
     if (transactionIndex === -1) {
@@ -46,7 +46,7 @@ export const PUT = requireAuth(async (request: NextRequest, userId: string, cont
       date
     }
 
-    saveTransactionsByUserId(userId, transactions)
+    await saveTransactionsByUserId(userId, transactions)
 
     return NextResponse.json(transactions[transactionIndex])
   } catch (error) {
@@ -62,14 +62,14 @@ export const PUT = requireAuth(async (request: NextRequest, userId: string, cont
 export const DELETE = requireAuth(async (request: NextRequest, userId: string, context: any) => {
   const params = (await context.params) as Awaited<RouteParams['params']>
   try {
-    const transactions = getTransactionsByUserId(userId)
+    const transactions = await getTransactionsByUserId(userId)
     const filteredTransactions = transactions.filter((t) => t.id !== params.id)
 
     if (filteredTransactions.length === transactions.length) {
       return NextResponse.json({ error: 'Transação não encontrada' }, { status: 404 })
     }
 
-    saveTransactionsByUserId(userId, filteredTransactions)
+    await saveTransactionsByUserId(userId, filteredTransactions)
 
     return NextResponse.json({ message: 'Transação excluída com sucesso' })
   } catch (error) {
