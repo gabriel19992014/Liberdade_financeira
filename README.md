@@ -2,6 +2,8 @@
 
 Aplicação de finanças pessoais com Next.js (App Router), API interna e arquitetura modular em TypeScript.
 
+link do projeto https://liberdade-financeira-henna.vercel.app/
+
 ## Stack
 
 - Next.js 16

@@ -4,11 +4,34 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import type { Transaction } from '@/lib/types/finance'
 
-const DATA_DIR = path.join(process.cwd(), 'data')
+const DATA_DIR = initializeDataDir()
 
-// Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true })
+function initializeDataDir(): string {
+  const projectDataDir = path.join(process.cwd(), 'data')
+
+  if (ensureDir(projectDataDir)) {
+    return projectDataDir
+  }
+
+  const tempDataDir = path.join('/tmp', 'finance-app-data')
+  if (ensureDir(tempDataDir)) {
+    return tempDataDir
+  }
+
+  throw new Error('Nao foi possivel inicializar diretorio de dados')
+}
+
+function ensureDir(dir: string): boolean {
+  try {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true })
+    }
+
+    fs.accessSync(dir, fs.constants.R_OK | fs.constants.W_OK)
+    return true
+  } catch (error) {
+    return false
+  }
 }
 
 export interface User {
@@ -52,8 +75,10 @@ export function writeData<T = unknown>(filename: string, data: T[]): void {
   try {
     const filePath = path.join(DATA_DIR, filename)
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2))
+    return
   } catch (error) {
     console.error('Error writing data:', error)
+    throw new Error('Falha ao persistir dados')
   }
 }
 
