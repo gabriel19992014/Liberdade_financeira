@@ -12,6 +12,8 @@ link do projeto https://liberdade-financeira-henna.vercel.app/
 - Tailwind CSS
 - JWT + bcryptjs
 - Supabase (PostgreSQL) com fallback local em JSON para desenvolvimento sem variáveis
+- jspdf + jspdf-autotable (exportação de relatórios em PDF)
+- Zod (validação de schemas)
 
 ## Arquitetura Atual
 
@@ -37,6 +39,7 @@ link do projeto https://liberdade-financeira-henna.vercel.app/
 - app/api/auth/forgot-password/route.ts
 - app/api/auth/login/route.ts
 - app/api/auth/register/route.ts
+- app/api/auth/account/route.ts
 - app/api/reports/route.ts
 - app/api/transactions/route.ts
 - app/api/transactions/[id]/route.ts
@@ -54,9 +57,12 @@ link do projeto https://liberdade-financeira-henna.vercel.app/
 - Recuperação de senha por pergunta de segurança
 - CRUD completo de transações
 - Classificação financeira (Ativo, Passivo, Cartão de Crédito, Poupança)
-- Gêneros padrão e personalizados
+- Categorias padrão e personalizadas
 - Dashboard com relatório mensal, anual ou total
+- Gráfico de pizza (donut) centralizado com legenda profissional
 - Filtros e ordenação de transações
+- Exportação de relatórios em PDF
+- Exclusão de conta com confirmação
 - Tema claro/escuro global
 - Área de Curso com orientações de uso e educação financeira
 
@@ -77,13 +83,16 @@ npm run lint
 npm install
 ```
 
-2. Criar ou ajustar arquivo de ambiente
+2. Criar ou ajustar arquivo `.env.local`
 
 ```bash
 JWT_SECRET=sua-chave-secreta
 SUPABASE_URL=https://seu-projeto.supabase.co
+# ou NEXT_PUBLIC_SUPABASE_URL (usado como fallback)
 SUPABASE_SERVICE_ROLE_KEY=sua-service-role-key
 ```
+
+> Sem `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY`, o projeto usa fallback em arquivos JSON locais (apenas para desenvolvimento).
 
 3. Subir aplicação
 
@@ -98,11 +107,10 @@ npm run dev
 3. Execute o arquivo supabase/schema.sql.
 4. Copie SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY para a Vercel e para .env.local.
 
-## Notas de evolução
+## Notas de arquitetura
 
-- O projeto foi refatorado para centralizar regras de negócio em módulos compartilhados.
-- Regras de formatação, categorias e classificação não ficam mais espalhadas entre páginas e APIs.
-- O fluxo de recuperação de senha usa pergunta de segurança cadastrada pelo próprio usuário.
-- Sem a resposta correta da pergunta de segurança não é possível recuperar a senha.
-- O projeto agora usa Supabase quando variáveis de ambiente estão configuradas.
-- Sem SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY, o projeto entra em fallback local para facilitar testes.
+- Regras de negócio centralizadas em `lib/` — formatação, categorias e classificação não ficam espalhadas entre páginas e APIs.
+- Recuperação de senha usa pergunta de segurança cadastrada pelo próprio usuário; sem a resposta correta, não é possível redefinir a senha.
+- O projeto usa Supabase quando `SUPABASE_URL` (ou `NEXT_PUBLIC_SUPABASE_URL`) e `SUPABASE_SERVICE_ROLE_KEY` estão configurados; caso contrário, entra em modo fallback com JSON local.
+- IDs de transações gerados com `crypto.randomUUID()` para garantir unicidade no banco.
+- Middleware valida o token JWT e a existência do usuário no banco a cada requisição autenticada — tokens de usuários excluídos retornam 401.
